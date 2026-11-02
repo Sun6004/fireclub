@@ -165,7 +165,7 @@
       gsap.set('#sL2', {opacity:0, yPercent:50});
       gsap.set('#sU', {'--ux':0});
       const tl = gsap.timeline({defaults:{ease:'power2.inOut'}, scrollTrigger:{
-        trigger:'#shift', start:'top top', end:()=> '+=' + (innerWidth < 761 ? 1200 : 1600),
+        trigger:'#shift', start:'top top', end:()=> '+=' + (innerWidth < 761 ? 500 : 700),
         pin:true, scrub:.6, anticipatePin:1, invalidateOnRefresh:true,
         onUpdate:self=>{ const p = self.progress; setDot(p < .5 ? 0 : 1); }
       }});
@@ -185,7 +185,7 @@
     // SECTION 02 — book → laptop
     const mm = gsap.matchMedia();
     mm.add({isMobile:'(max-width: 760px)', isDesk:'(min-width: 761px)'}, (ctx)=>{
-      const len = ctx.conditions.isMobile ? 2200 : 3400;
+      const len = ctx.conditions.isMobile ? 1000 : 1600;
       Object.assign(S,{ry:0, sc:.9, bz:1, deck:0, tilt:0, y:0, pp:0}); render();
       const tl = gsap.timeline({
         defaults:{ease:'none'},
