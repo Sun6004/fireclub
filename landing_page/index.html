@@ -13,6 +13,35 @@
 
   <!-- 스타일 -->
   <link rel="stylesheet" href="css/style.css">
+
+    <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SM9MT8K5DT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-SM9MT8K5DT');
+  </script>
+  <!-- End Google Analytics 4 -->
+
+  <!-- Meta Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;
+    n.version='2.0';n.queue=[];
+    t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}
+    (window,document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+
+    fbq('init', '1402322082057712');
+    fbq('track', 'PageView');
+  </script>
+  <!-- End Meta Pixel Code -->
+   
 </head>
 <body>
   <!-- Header / Body / Footer는 js/script.js가 html/ 폴더에서 불러와 이 자리에 넣습니다 -->
