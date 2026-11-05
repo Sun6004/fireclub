@@ -37,6 +37,40 @@ landing-page/
 - 원칙 카드의 관련 강의: `js/script.js`의 `PRINCIPLES`
 - 스크롤 길이·타이밍: `js/script.js`의 `initScroll()` 안 타임라인
 
+## GA4 · 메타 픽셀 행동 추적
+
+기본 태그와 ID는 `index.html`, 공통 이벤트 전송은 `js/analytics.js`, FAQ·카드·게임의 상태 이벤트는 `js/script.js`에서 관리합니다. 배포할 때 세 파일을 함께 반영하세요. HTML 예비 사본(`partials.js`)은 이번 변경으로 갱신할 필요가 없습니다.
+
+두 도구에 아래 이름의 맞춤 이벤트를 보냅니다. 메타는 `trackCustom`을 사용합니다.
+
+| 이벤트 | 기록하는 행동 | 주요 매개변수 |
+|---|---|---|
+| `button_click` | 메뉴·로고·강의 링크·FAQ·카드·점 버튼·게임 버튼 클릭 | `button_id`, `button_text`, `section_id`, 링크인 경우 `link_url`, `outbound` |
+| `course_cta_click` | 상단·하단·모바일 고정·게임 팝업에서 강의 페이지로 이동하는 링크 클릭 | 위 매개변수 + `course_id` |
+| `scroll_depth` | 스크롤 25%, 50%, 75%, 90%, 100% 도달 | `percent_scrolled` |
+| `section_view` | 각 콘텐츠 섹션이 화면 중앙 영역에 진입 | `section_id`, `section_title` |
+| `faq_toggle` | 질문을 직접 열거나 닫음 | `faq_id`, `question`, `action` (`open`/`close`) |
+| `principle_select` | 원칙 카드를 클릭·방향키·점 버튼·가로 스와이프로 선택 | `principle_name`, `interaction_method` |
+| `game_open`, `game_close` | 미니게임 열기·닫기 (닫기 버튼·배경·Esc 포함) | `section_id` |
+| `game_result` | 미니게임 매수·매도 선택 결과 | `choice`, `result` |
+
+- 스크롤 비율은 **스크롤 가능한 전체 거리 중 내려간 거리**입니다. 스크롤이 불필요한 짧은 화면에서는 발생하지 않습니다. 한 번에 아래로 이동하면 통과한 기준들을 모두 보냅니다. 스크롤 기준별·섹션별 조회는 페이지 로드당 한 번만 전송합니다.
+- 버튼 위치는 `section_id`로 구분합니다. `shift`=첫 화면, `enroll`=마지막 신청 영역, `mobile_cta`=모바일 고정 버튼, `game`=미니게임, `hdr`=상단 메뉴입니다.
+- 모바일 고정 버튼은 기존 CSS에서 숨겨져 있습니다. 현재 디자인은 유지하며, 나중에 표시하면 동일하게 추적됩니다.
+- 카드 자동 전환은 `principle_select`로 집계하지 않습니다. 점 버튼을 눌러도 내부 처리 때문에 `button_click`이 두 번 발생하지 않습니다.
+- 하나의 강의 링크 클릭은 `button_click`과 `course_cta_click`으로 각각 기록됩니다. 전체 클릭 수를 계산할 때 두 이벤트를 합산하지 마세요. GA4 향상된 측정의 기본 `click`, `scroll`과도 별도 이벤트입니다.
+- `course_cta_click`은 강의에 관심을 보인 클릭입니다. 실제 수강 신청·결제 완료는 외부 강의 서비스에서 별도로 연동해야 하며, 여기서는 `Purchase`/`Lead`를 보내지 않습니다.
+- 링크 쿼리 문자열, 입력 내용은 맞춤 이벤트에 보내지 않습니다. 기존 GA4·메타 기본 태그의 자동 수집 설정은 그대로 적용됩니다.
+
+### 수집 확인과 보고서 설정
+
+1. 로컬 또는 배포 주소의 `index.html?analytics_debug=1`을 열면 브라우저 콘솔에 이벤트 이름과 매개변수가 표시되고 GA4 이벤트에는 `debug_mode`가 붙습니다. 네트워크 전송 자체는 기존 실제 태그를 사용합니다.
+2. GA4 실시간/DebugView와 메타 이벤트 관리자의 테스트 이벤트에서 실제 수신을 확인하세요. 광고 차단 기능이나 동의 설정에 따라 수집이 제한될 수 있습니다.
+3. GA4에서 버튼 위치별 보고서를 만들려면 **관리 → 맞춤 정의**에 이벤트 범위 측정기준 `button_id`, `button_text`, `section_id`를 등록하세요. 필요하면 `faq_id`, `action`, `principle_name`, `interaction_method`, `percent_scrolled`도 등록합니다.
+4. 클릭을 주요 이벤트로 활용하려면 GA4에서 `course_cta_click`을 주요 이벤트로 지정하고, 메타에서는 같은 맞춤 이벤트를 기준으로 맞춤 전환을 설정하세요.
+
+공식 참고: [GA4 이벤트 전송](https://developers.google.com/analytics/devguides/collection/ga4/events), [GA4 맞춤 측정기준](https://support.google.com/analytics/answer/14240153?hl=ko), [메타 픽셀 전환 추적](https://developers.facebook.com/documentation/meta-pixel/implementation/conversion-tracking).
+
 ### partials.js 갱신
 `html/*.html`을 고친 뒤 더블클릭 실행에도 반영하려면 `partials.js`를 다시 만들어야 합니다. 폴더에서 아래 명령을 실행하세요.
 ```

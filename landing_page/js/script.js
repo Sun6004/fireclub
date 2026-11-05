@@ -7,6 +7,10 @@
 (function(){
   'use strict';
 
+  function track(name, params){
+    if (window.LandingAnalytics) window.LandingAnalytics.track(name, params);
+  }
+
   /* ---------- 1. HTML 영역 불러오기 ---------- */
   const PARTS = [
     { name:'header', mount:'site-header' },
@@ -53,15 +57,17 @@
     const tiles = [...document.querySelectorAll('.pgrid .ptile')];
     const list = document.getElementById('pdList'), nameEl = document.getElementById('pdName'), panel = document.getElementById('pdetail');
     const esc = s => s.replace(/&/g,'&amp;');
-    function select(i){
+    function select(i, method){
       tiles.forEach((t,k)=>{ const on = k===i; t.classList.toggle('is-active', on); t.setAttribute('aria-selected', on); });
       nameEl.textContent = PRINCIPLES[i].name;
       panel.setAttribute('aria-labelledby','pt-'+i);
       list.innerHTML = PRINCIPLES[i].lessons.map((l,k)=>`<li style="animation-delay:${k*60}ms"><span>${l[0]}</span>${esc(l[1])}<em>${l[2]}</em></li>`).join('');
+      // 자동 전환과 첫 화면 기본 선택은 방문자의 선택으로 집계하지 않습니다.
+      if (method) track('principle_select', {section_id:'principles', principle_name:PRINCIPLES[i].name, interaction_method:method});
     }
     tiles.forEach((t,i)=>{
-      t.addEventListener('click', ()=> select(i));
-      t.addEventListener('keydown', e=>{ if(e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); const n=(i+(e.key==='ArrowRight'?1:-1)+tiles.length)%tiles.length; tiles[n].focus(); select(n);} });
+      t.addEventListener('click', e=> select(i, e.isTrusted ? 'click' : null));
+      t.addEventListener('keydown', e=>{ if(e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); const n=(i+(e.key==='ArrowRight'?1:-1)+tiles.length)%tiles.length; tiles[n].focus(); select(n, e.isTrusted ? 'keyboard' : null);} });
     });
     if (tiles.length) select(0);
 
@@ -98,6 +104,7 @@
         document.querySelectorAll('.faq-q').forEach(o=>{ if (o !== q && o.getAttribute('aria-expanded') === 'true'){ o.setAttribute('aria-expanded','false'); o.parentElement.classList.remove('is-open'); } });
         q.setAttribute('aria-expanded', String(!open));
         q.parentElement.classList.toggle('is-open', !open);
+        track('faq_toggle', {section_id:'faq', faq_id:q.id, question:q.querySelector('.t').textContent, action:open ? 'close' : 'open'});
       });
     });
 
@@ -134,13 +141,13 @@
           if (progScroll){ progScroll = false; return; }
           const x = pgrid.scrollLeft;
           let best = 0; tiles.forEach((_,k)=>{ if (Math.abs(cardLeft(k) - x) < Math.abs(cardLeft(best) - x)) best = k; });
-          if (best !== activeIdx()) tiles[best].click();
+          if (best !== activeIdx()){ select(best, 'swipe'); autoIdx = best; schedule(); }
         }, 120);
       }, {passive:true});
       // 손가락으로 넘기는 동안은 자동 전환 잠시 멈춤
       pgrid.addEventListener('touchstart', ()=>{ paused = true; schedule(); progScroll = false; }, {passive:true});
       pgrid.addEventListener('touchend', ()=>{ paused = false; schedule(); }, {passive:true});
-      dotBtns.forEach((d,i)=> d.addEventListener('click', ()=> tiles[i].click()));
+      dotBtns.forEach((d,i)=> d.addEventListener('click', e=>{ select(i, e.isTrusted ? 'dot' : null); autoIdx = i; schedule(); }));
       syncDots(activeIdx());
     }
 
@@ -256,6 +263,7 @@
         play.classList.add('ng-hidden'); result.classList.remove('ng-hidden');
         requestAnimationFrame(()=>{ path.getBoundingClientRect(); path.style.transition = 'stroke-dashoffset .8s ease'; path.style.strokeDashoffset = 0; });
         $('.ng-retry').focus({preventScroll:true});
+        track('game_result', {section_id:'game', choice:c, result:win ? 'win' : 'lose'});
       }
 
       function open(){
@@ -264,12 +272,14 @@
         modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
         document.documentElement.classList.add('ng-lock');
         fab.classList.add('hide');
+        track('game_open', {section_id:'game'});
         setTimeout(()=> $('.ng-x').focus({preventScroll:true}), 50);
       }
       function close(){
         modal.classList.remove('open'); modal.setAttribute('aria-hidden','true');
         document.documentElement.classList.remove('ng-lock');
         fab.classList.remove('hide');
+        track('game_close', {section_id:'game'});
         if (lastFocus && lastFocus.focus) lastFocus.focus({preventScroll:true});
       }
 
@@ -491,6 +501,7 @@
     await loadPartials();
     initInteractions();
     initScroll();
+    if (window.LandingAnalytics) window.LandingAnalytics.init();
     // 페이지가 이미 로드된 뒤 삽입되므로 위치 재계산
     if (window.ScrollTrigger){
       requestAnimationFrame(() => window.ScrollTrigger.refresh());
