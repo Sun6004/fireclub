@@ -1,21 +1,20 @@
 보내주신 「landing-page 1」 대비 수정·추가된 파일 — 같은 경로에 덮어쓰기 하세요.
 
-[이번에 추가: 블로그 글을 파일로 관리 (DB 없음)]
-posts/              (새 폴더) 글 폴더 + list.txt + 작성방법.txt
-                    예시 글 2개(01-sample-intro, 02-sample-images)는 실제 글로 바꿔 주세요.
-js/blog.js          posts/ 폴더의 txt·이미지를 읽어 목록·글 보기 표시
-                    글쓰기·관리자 로그인·댓글·조회수는 파일 방식에서 사용 안 함 (FILE_MODE)
-README.md           '블로그 글 올리기 (파일 방식)' 안내 추가
-※ 지난번 Supabase(DB) 연결 파일은 모두 뺐습니다.
+[블로그 DB(Supabase) 연결 — 주소·공개 키 입력 완료]
+js/blog-config.js   (새 파일) Supabase 주소 + publishable 공개 키 입력됨
+supabase/schema.sql (새 파일) SQL Editor에서 실행하는 테이블·보안 규칙 (이미 실행하셨으면 다시 안 해도 됨)
+js/blog.js          글·댓글·조회수를 Supabase에 저장/불러오기, 관리자 로그인은 Supabase 이메일·비밀번호
+                    + PC 3개씩 페이지 번호 / 모바일 1개씩 넘기기, 경로 표시
+blog.html           로그인 창 이메일 칸, Supabase 라이브러리(2.117.3)·blog-config.js 불러오기
+                    + 검정 배너 제거(라임 라인만), 경로 HOME > 블로그, 페이지 번호, 푸터 교체
+README.md           '블로그 DB 연결 (Supabase)' 설정 순서
 
-[이전 수정 (계속 포함)]
+[이전 수정]
 html/body.html      Hero "이해하고 투자하세요." / 투자 전략 제목 / 강의 정보 제목 '관리하느냐'
 html/footer.html    푸터 문구 전체 교체
 js/partials.js      위 HTML 변경 반영 예비 사본
 css/style.css       푸터 디자인, 코인 버튼 보조, 투자 전략 제목 줄바꿈 보정
 js/script.js        PC 맨 아래에서 코인 버튼이 푸터 위로 비켜 올라감
-blog.html           검정 배너 제거(라임 라인만), 경로 HOME > 블로그, 페이지 번호, 푸터 교체
 css/blog.css        라임 라인, 경로, 페이지 번호, 목록 아래 빈 공간 축소
-js/blog.js          PC 3개씩 페이지 번호 / 모바일 1개씩 넘기기
 
-이미지(assets) · index.html · analytics.js 는 변경 없음.
+이미지 · index.html · analytics.js 는 변경 없음.

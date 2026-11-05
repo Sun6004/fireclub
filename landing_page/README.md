@@ -130,14 +130,24 @@ node -e "const c=require('crypto'),s='fireup-blog::',p='새비밀번호';console
 | 연회색 | #ECECEC |
 | 형광펜 노랑 | #FFE14D |
 
+## 블로그 DB 연결 (Supabase)
 
-## 블로그 글 올리기 (파일 방식, DB 없음)
+블로그 글·댓글을 **모든 방문자에게 보이게** 하려면 Supabase에 연결합니다. 연결 전에는 예전처럼 각 브라우저(localStorage)에만 저장됩니다.
 
-블로그 글은 `posts/` 폴더의 txt 파일과 이미지로 관리합니다. 자세한 형식은 `posts/작성방법.txt`를 보세요.
+1. [supabase.com](https://supabase.com)에서 가입 → **New project** 생성 (Region: Northeast Asia (Seoul) 권장)
+2. 왼쪽 **SQL Editor → New query**에 `supabase/schema.sql` 내용을 전부 붙여 넣고 **Run**
+3. **Authentication → Users → Add user**에서 관리자 계정(이메일·비밀번호) 1개 생성 (Auto Confirm 체크)
+4. **Authentication → Sign In / Providers**에서 **Allow new users to sign up을 끄기** — 관리자 외에 아무도 가입하지 못하게 (중요)
+5. **Project Settings → API**에서 `Project URL`과 `anon public` 키를 복사해 `js/blog-config.js`에 붙여 넣기
+   - `service_role` 키는 절대 넣지 마세요.
+6. 사이트에 다시 올린 뒤 `blog.html#admin`으로 들어가 3번의 이메일·비밀번호로 로그인 → 글쓰기
 
-1. `posts/` 안에 새 폴더(예: `03-etf-cost`)를 만들고 `post.txt`와 이미지를 넣기
-2. `posts/list.txt`에 폴더 이름 한 줄 추가
-3. 사이트에 다시 올리기
+| 누가 | 할 수 있는 것 |
+|---|---|
+| 방문자 | 공개 글·댓글 읽기, 댓글·답글 쓰기, 조회수 +1 |
+| 관리자(로그인) | 글 쓰기·수정·삭제·공지·비공개, 비공개 글 보기, 댓글 삭제 |
 
-- 글쓰기 화면·관리자 로그인·댓글·조회수는 파일 방식에서는 사용하지 않습니다 (`js/blog.js`의 `FILE_MODE`).
-- 내 컴퓨터에서 `blog.html`을 더블클릭하면 브라우저가 txt 읽기를 막아 글이 보이지 않습니다. 사이트에 올리거나 로컬 서버로 확인하세요.
+- 이 권한은 `schema.sql`의 보안 규칙(RLS)으로 DB에서 직접 막습니다. 페이지 코드를 조작해도 우회되지 않습니다.
+- 본문 이미지는 글 안에 함께 저장됩니다(최대 가로 1600px로 자동 축소). 이미지가 아주 많아지면 Supabase Storage로 옮기는 것을 권합니다.
+- 브라우저에 저장돼 있던 기존 글은 자동으로 옮겨지지 않습니다. 연결 후 다시 등록해 주세요.
+- 무료 요금제는 1주일 동안 접속이 없으면 프로젝트가 일시 정지될 수 있습니다(대시보드에서 다시 켜면 데이터는 그대로).

@@ -227,6 +227,7 @@
     <form class="cf-panel login-panel" id="loginForm" autocomplete="off">
       <h2 id="lgTitle">관리자 로그인</h2>
       <p id="lgDesc">관리자 비밀번호를 입력하세요.</p>
+      <label class="lg-field" id="lgEmailRow" hidden><span>이메일</span><input type="email" id="lgEmail" autocomplete="username"></label>
       <label class="lg-field"><span>비밀번호</span><input type="password" id="lgPw" autocomplete="current-password" required minlength="4"></label>
       <label class="lg-field" id="lgPw2Row" hidden><span>비밀번호 확인</span><input type="password" id="lgPw2" autocomplete="new-password"></label>
       <p class="lg-error" id="lgError" role="alert"></p>
@@ -268,6 +269,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
+  <!-- 블로그 DB(Supabase): js/blog-config.js에 주소·키를 넣으면 사용됩니다. 비워 두면 브라우저 저장 방식 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+  <script src="js/blog-config.js"></script>
   <script src="js/blog.js"></script>
 </body>
 </html>

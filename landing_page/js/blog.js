@@ -2,9 +2,8 @@
    블로그 — blog.js
    글쓰기 에디터 · 이미지 첨부 · 임시 저장 · 미리보기 · 카테고리/태그
    검색 · 게시글 관리 · 댓글/답글 · 통계
-   ※ 글은 프로젝트의 posts/ 폴더(txt + 이미지)에서 읽어 옵니다. DB·서버가 필요 없습니다.
-     글 추가 방법은 posts/작성방법.txt 참고.
-     (FILE_MODE를 false로 바꾸면 예전처럼 브라우저 저장 + 글쓰기 화면 방식)
+   ※ js/blog-config.js에 Supabase 주소·키를 넣으면 글·댓글이 Supabase(DB)에 저장되어 모든 방문자에게 보입니다.
+     비워 두면 예전처럼 이 브라우저(localStorage)에만 저장됩니다.
    ========================================================= */
 (function(){
   'use strict';
@@ -21,10 +20,13 @@
   const IMG_MAX = 1600;          // 첨부 이미지 최대 가로(px)
   const IMG_QUALITY = 0.85;
 
-  /* ---------------- 파일 방식 글 (posts/ 폴더) ---------------- */
-  const FILE_MODE = true;
-  const POSTS_DIR = 'posts/';
-  let loading = FILE_MODE, loadError = '';
+  /* ---------------- Supabase (DB) 연결 ---------------- */
+  const CFG = window.BLOG_CONFIG || {};
+  const db = (CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase && window.supabase.createClient)
+    ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey)
+    : null;
+  let dbAdmin = false;          // Supabase 로그인 상태
+  let loading = !!db;           // 처음 글을 불러오는 중
 
   /* ---------------- 저장소 ---------------- */
   const mem = {};
@@ -40,9 +42,59 @@
     },
     del(k){ try { localStorage.removeItem(k); } catch(e){ delete mem[k]; } }
   };
-  let posts = FILE_MODE ? [] : store.get(KEY_POSTS, []);
+  let posts = db ? [] : store.get(KEY_POSTS, []);
   const savePosts = () => store.set(KEY_POSTS, posts);
-  const isAdmin = () => { if (FILE_MODE) return false; try { return sessionStorage.getItem(KEY_SESSION) === '1'; } catch(e){ return !!mem.__session; } };
+  const isAdmin = () => { if (db) return dbAdmin; try { return sessionStorage.getItem(KEY_SESSION) === '1'; } catch(e){ return !!mem.__session; } };
+
+  /* ---------------- DB 읽기·쓰기 (db가 없으면 localStorage) ---------------- */
+  const toRow = p => ({ id:p.id, title:p.title, html:p.html, tags:p.tags || [], visibility:p.visibility, pinned:!!p.pinned,
+    created_at:p.createdAt, updated_at:p.updatedAt || p.createdAt, write_ms:p.writeMs || 0 });
+  const fromRow = r => ({ id:r.id, title:r.title, html:r.html || '', tags:r.tags || [], visibility:r.visibility, pinned:!!r.pinned,
+    createdAt:Number(r.created_at), updatedAt:Number(r.updated_at), views:r.views || 0, writeMs:Number(r.write_ms) || 0, comments:[] });
+  const cFromRow = r => ({ id:r.id, name:r.name || '', text:r.text, author:!!r.author, createdAt:Number(r.created_at) });
+  async function loadAll(){
+    if (!db) return;
+    const [pr, cr] = await Promise.all([
+      db.from('posts').select('*').order('created_at', { ascending:false }),
+      db.from('comments').select('*').order('created_at', { ascending:true })
+    ]);
+    loading = false;
+    if (pr.error){ toast('글을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); console.error(pr.error); }
+    const list = (pr.data || []).map(fromRow), byId = {};
+    list.forEach(p => byId[p.id] = p);
+    const rows = cr.error ? [] : (cr.data || []), top = {};
+    rows.filter(r => !r.parent_id).forEach(r => { const p = byId[r.post_id]; if (p){ const c = Object.assign(cFromRow(r), { replies:[] }); top[r.id] = c; p.comments.push(c); } });
+    rows.filter(r => r.parent_id).forEach(r => { const c = top[r.parent_id]; if (c) c.replies.push(cFromRow(r)); });
+    posts = list;
+    if ($('viewEditor').hidden) route(true);
+  }
+  async function dbDo(promise, okMsg){
+    const { error } = await promise;
+    if (error){ console.error(error); toast('저장하지 못했어요. 로그인 상태나 연결을 확인해 주세요.'); loadAll(); return false; }
+    if (okMsg) toast(okMsg);
+    return true;
+  }
+  async function persistPost(p, okMsg){
+    if (!db){ const ok = savePosts(); if (ok && okMsg) toast(okMsg); return ok; }
+    return dbDo(db.from('posts').upsert(toRow(p)), okMsg);
+  }
+  async function persistDeletePost(id, okMsg){
+    if (!db){ savePosts(); if (okMsg) toast(okMsg); return true; }
+    return dbDo(db.from('posts').delete().eq('id', id), okMsg);
+  }
+  async function persistComment(postId, c, parentId, okMsg){
+    if (!db){ savePosts(); if (okMsg) toast(okMsg); return true; }
+    return dbDo(db.from('comments').insert({ id:c.id, post_id:postId, parent_id:parentId || null, name:c.name, text:c.text, author:!!c.author, created_at:c.createdAt }), okMsg);
+  }
+  async function persistDeleteComment(id, okMsg){
+    if (!db){ savePosts(); if (okMsg) toast(okMsg); return true; }
+    return dbDo(db.from('comments').delete().eq('id', id), okMsg);   // 답글은 DB에서 함께 삭제
+  }
+  function persistView(id){
+    if (!db){ savePosts(); return; }
+    db.rpc('increment_views', { pid:id }).then(({ error }) => { if (error) console.warn(error); });
+  }
+
 
   /* ---------------- 유틸 ---------------- */
   const $ = id => document.getElementById(id);
@@ -81,7 +133,7 @@
           const n = a.name.toLowerCase(), v = a.value;
           let keep = false;
           if (tag === 'A' && n === 'href' && /^(https?:|mailto:)/i.test(v.trim())) keep = true;
-          if (tag === 'IMG' && n === 'src' && /^(data:image\/(png|jpe?g|gif|webp);base64,|https?:|posts\/)/i.test(v.trim())) keep = true;
+          if (tag === 'IMG' && n === 'src' && /^(data:image\/(png|jpe?g|gif|webp);base64,|https?:)/i.test(v.trim())) keep = true;
           if (tag === 'IMG' && n === 'alt') keep = true;
           if (tag === 'FIGURE' && n === 'class'){ ch.setAttribute('class', v.split(/\s+/).filter(c => FIG_CLASSES.test(c)).join(' ')); keep = true; }
           if (!keep) ch.removeAttribute(a.name);
@@ -93,66 +145,6 @@
     })(root);
     root.querySelectorAll('p').forEach(p => { if (!p.textContent.trim() && !p.querySelector('img,br')) p.remove(); });
     return root.innerHTML.trim();
-  }
-
-  /* ---------------- posts/ 폴더의 txt 읽기 ----------------
-     post.txt 형식
-       제목: ...            (필수)
-       날짜: 2026-11-05     (필수, 시간까지 쓰려면 2026-11-05 14:30)
-       태그: ETF, 기초      (선택)
-       공지: 예             (선택, 목록 맨 앞에 고정)
-       썸네일: cover.jpg    (선택, 없으면 본문 첫 이미지)
-       (빈 줄 다음부터 본문)
-     본문 규칙: 빈 줄 = 문단 나눔 / ## 소제목 / > 인용 / - 목록 / **굵게**
-               [이미지: chart.png] 또는 [이미지: chart.png | 사진 설명] / 링크 https://... 자동 연결 */
-  const inline = s => esc(s)
-    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-  function parsePostTxt(txt, folder){
-    txt = txt.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
-    const cut = txt.search(/\n\s*\n/);
-    const headPart = cut < 0 ? txt : txt.slice(0, cut), bodyPart = cut < 0 ? '' : txt.slice(cut).trim();
-    const meta = {};
-    headPart.split('\n').forEach(l => { const m = /^\s*([^:：]+)\s*[:：]\s*(.*)$/.exec(l); if (m) meta[m[1].trim()] = m[2].trim(); });
-    const base = POSTS_DIR + folder + '/';
-    const imgSrc = f => /^(https?:|data:)/.test(f) ? f : base + encodeURI(f.trim());
-    const html = bodyPart.split(/\n\s*\n/).map(block => {
-      const lines = block.split('\n').map(l => l.trimEnd());
-      const img = /^\[\s*이미지\s*[:：]\s*([^\]|]+?)\s*(?:\|\s*([^\]]*))?\]$/.exec(block.trim());
-      if (img) return `<figure class="w-100 al-center"><img src="${esc(imgSrc(img[1]))}" alt="${esc(img[2] || '')}">${img[2] ? `<figcaption>${esc(img[2])}</figcaption>` : ''}</figure>`;
-      if (/^##\s/.test(lines[0])) return `<h2>${inline(lines[0].replace(/^##\s*/, ''))}</h2>` + (lines.length > 1 ? `<p>${lines.slice(1).map(inline).join('<br>')}</p>` : '');
-      if (lines.every(l => /^>\s?/.test(l))) return `<blockquote><p>${lines.map(l => inline(l.replace(/^>\s?/, ''))).join('<br>')}</p></blockquote>`;
-      if (lines.every(l => /^[-•]\s/.test(l))) return `<ul>${lines.map(l => `<li>${inline(l.replace(/^[-•]\s*/, ''))}</li>`).join('')}</ul>`;
-      return `<p>${lines.map(inline).join('<br>')}</p>`;
-    }).join('');
-    const d = (meta['날짜'] || '').replace(/\./g, '-');
-    const t = Date.parse(d.length <= 10 ? d + 'T09:00:00' : d.replace(' ', 'T'));
-    const thumb = meta['썸네일'] ? imgSrc(meta['썸네일']) : '';
-    return {
-      id: folder, title: meta['제목'] || folder, html: sanitize(html),
-      tags: (meta['태그'] || '').split(/[,，]/).map(s => s.trim().replace(/^#/, '')).filter(Boolean),
-      visibility: 'public', pinned: /^(예|yes|y|true|1)$/i.test(meta['공지'] || ''),
-      createdAt: isNaN(t) ? 0 : t, updatedAt: isNaN(t) ? 0 : t, views: 0, comments: [], thumb
-    };
-  }
-  async function loadFilePosts(){
-    try {
-      if (Array.isArray(window.BLOG_FILE_POSTS)){   // 미리보기용으로 글을 미리 넣어 둔 경우
-        posts = window.BLOG_FILE_POSTS.map(x => parsePostTxt(x.txt, x.folder));
-      } else {
-        const get = async u => { const r = await fetch(u, { cache:'no-cache' }); if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); };
-        const folders = (await get(POSTS_DIR + 'list.txt')).split(/\r?\n/).map(s => s.trim()).filter(s => s && !s.startsWith('#'));
-        const loaded = await Promise.all(folders.map(f => get(POSTS_DIR + f + '/post.txt').then(t => parsePostTxt(t, f)).catch(e => { console.warn('[blog] 글을 읽지 못함:', f, e); return null; })));
-        posts = loaded.filter(Boolean);
-      }
-    } catch(e){
-      console.warn('[blog] posts/list.txt를 읽지 못했습니다.', e);
-      loadError = location.protocol === 'file:'
-        ? '<h3>글을 불러오지 못했어요</h3><p>내 컴퓨터에서 파일을 더블클릭해 열면 브라우저가 글 파일 읽기를 막습니다.<br>사이트에 올리거나 로컬 서버(예: VS Code Live Server)로 열어 주세요.</p>'
-        : '<h3>글을 불러오지 못했어요</h3><p>posts/list.txt 파일이 있는지 확인해 주세요.</p>';
-    }
-    loading = false;
-    route(true);
   }
 
   /* ---------------- 관리자 로그인 ----------------
@@ -177,12 +169,13 @@
   const lm = $('loginModal');
   function openLogin(){
     $('lgTitle').textContent = '관리자 로그인';
-    $('lgDesc').textContent = '관리자 비밀번호를 입력하세요.';
+    $('lgDesc').textContent = db ? '관리자 이메일과 비밀번호를 입력하세요.' : '관리자 비밀번호를 입력하세요.';
+    $('lgEmailRow').hidden = !db; $('lgEmail').required = !!db;
     $('lgPw2Row').hidden = true; $('lgPw2').required = false;
     $('lgSubmit').textContent = '로그인';
     $('lgPw').value = ''; $('lgPw2').value = ''; $('lgError').textContent = '';
     lm.hidden = false; document.body.classList.add('modal-open');
-    setTimeout(() => $('lgPw').focus(), 30);
+    setTimeout(() => (db ? $('lgEmail') : $('lgPw')).focus(), 30);
   }
   function closeLogin(){ lm.hidden = true; document.body.classList.remove('modal-open'); }
   document.querySelectorAll('[data-open-login]').forEach(b => b.addEventListener('click', openLogin));
@@ -190,13 +183,23 @@
   $('loginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const pw = $('lgPw').value;
+    if (db){
+      $('lgSubmit').disabled = true;
+      const { error } = await db.auth.signInWithPassword({ email: $('lgEmail').value.trim(), password: pw });
+      $('lgSubmit').disabled = false;
+      if (error){ $('lgError').textContent = '이메일 또는 비밀번호가 맞지 않아요.'; $('lgPw').select(); return; }
+      dbAdmin = true; applyAdmin(); closeLogin(); toast('관리자로 로그인했어요.');
+      loadAll();   // 비공개 글까지 다시 불러오기
+      return;
+    }
     if (!ADMIN_PW_HASHES.includes(await hashPw(pw))){
       $('lgError').textContent = '비밀번호가 맞지 않아요.'; $('lgPw').select(); return;
     }
     setSession(true); applyAdmin(); closeLogin(); toast('관리자로 로그인했어요.'); route();
   });
-  $('logoutBtn').addEventListener('click', () => {
+  $('logoutBtn').addEventListener('click', async () => {
     if (leavingEditor){ leavingEditor(); leavingEditor = null; }
+    if (db){ await db.auth.signOut(); dbAdmin = false; posts = posts.filter(p => p.visibility === 'public'); }
     setSession(false); applyAdmin(); toast('로그아웃했어요.');
     if (/^#(write|edit-)/.test(location.hash)) location.hash = '#list'; else route();
   });
@@ -208,7 +211,6 @@
   function route(keepScroll){
     const h = location.hash.replace('#','');
     if (leavingEditor && !/^write$|^edit-/.test(h)){ leavingEditor(); leavingEditor = null; }
-    if (FILE_MODE && (h === 'admin' || h === 'write' || h.startsWith('edit-'))){ history.replaceState(null,'','#list'); renderList(); show('viewList'); return; }
     if (h === 'admin'){ history.replaceState(null,'','#list'); renderList(); show('viewList'); if (!isAdmin()) openLogin(); return; }
     if (h === 'write' || h.startsWith('edit-')){
       if (!isAdmin()){ show('viewLocked'); return; }
@@ -262,7 +264,7 @@
     $('resultLine').innerHTML = any ? `총 <b>${all.length}</b>건` + (filter.q ? ` · ‘${esc(filter.q)}’ 검색 결과` : '') : '';
 
     $('postList').innerHTML = shown.map(p => {
-      const img = p.thumb || firstImg(p.html), c = cmtCount(p), d = new Date(p.createdAt);
+      const img = firstImg(p.html), c = cmtCount(p), d = new Date(p.createdAt);
       return `<article class="card">
         <a href="#post-${p.id}">
           <div class="card-thumb${img ? '' : ' no-img'}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span>Fire.up</span>'}
@@ -270,7 +272,7 @@
           <div class="card-body">
             <h3>${esc(p.title)}</h3>
             <p>${esc(textOf(p.html).slice(0,140))}</p>
-            <div class="card-meta"><time>${fmtDate(p.createdAt).replace(/\./g,'-')}</time>${FILE_MODE ? '' : `<span>${fmtTime(p.createdAt)}</span>`}${FILE_MODE ? '' : `<span class="v">조회 ${p.views||0}${c ? ` · 댓글 ${c}` : ''}</span>`}</div>
+            <div class="card-meta"><time>${fmtDate(p.createdAt).replace(/\./g,'-')}</time><span>${fmtTime(p.createdAt)}</span><span class="v">조회 ${p.views||0}${c ? ` · 댓글 ${c}` : ''}</span></div>
           </div>
         </a>
       </article>`;
@@ -288,8 +290,7 @@
     } else if (!all.length){
       empty.innerHTML = '<h3>검색 결과가 없어요</h3><p>다른 검색어로 찾아 보세요.</p>';
     }
-    if (loading){ empty.hidden = false; empty.innerHTML = '<h3>글을 불러오는 중이에요</h3>'; }
-    else if (loadError){ empty.hidden = false; empty.innerHTML = loadError; }
+    if (loading){ empty.hidden = false; empty.innerHTML = '<h3>글을 불러오는 중이에요</h3><p>잠시만 기다려 주세요.</p>'; }
   }
   // PC 페이지 번호: ‹ 1 2 3 ›
   function renderPager(pages){
@@ -342,9 +343,9 @@
       <h1>${esc(p.title || '제목 없음')}</h1>
       <div class="pi-meta">
         <span><b>작성자</b>포메뽀꼬</span>
-        <span><b>작성일</b>${FILE_MODE ? fmtDate(p.createdAt) : fmt(p.createdAt)}</span>
+        <span><b>작성일</b>${fmt(p.createdAt)}</span>
         ${p.updatedAt && p.updatedAt - p.createdAt > 60000 ? `<span><b>수정일</b>${fmt(p.updatedAt)}</span>` : ''}
-        ${FILE_MODE ? '' : `<span><b>조회</b>${p.views||0}</span>`}
+        <span><b>조회</b>${p.views||0}</span>
         ${isAdmin() && p.writeMs ? `<span><b>작성 소요</b>${durText(p.writeMs)}</span>` : ''}
       </div>
     </header>
@@ -369,7 +370,7 @@
     // 조회수: 세션당 1회
     const vk = 'fc_viewed_' + id;
     let counted = false; try { counted = sessionStorage.getItem(vk) === '1'; } catch(e){}
-    if (!counted && !FILE_MODE){ p.views = (p.views||0) + 1; savePosts(); try { sessionStorage.setItem(vk,'1'); } catch(e){} }
+    if (!counted){ p.views = (p.views||0) + 1; persistView(p.id); try { sessionStorage.setItem(vk,'1'); } catch(e){} }
 
     art.innerHTML = postHead(p) + postExtras(p);
     art.querySelectorAll('[data-tag]').forEach(a => a.addEventListener('click', () => { filter.tag = a.dataset.tag; filter.page = 1; }));
@@ -391,10 +392,10 @@
       <button type="button" class="btn btn-ghost" id="togglePin">${p.pinned ? '공지 해제' : '공지로 고정'}</button>
       <button type="button" class="btn btn-ghost" id="togglePub">${p.visibility === 'public' ? '비공개로 전환' : '공개로 전환'}</button>
       <button type="button" class="btn btn-danger" id="delPost">삭제</button>`;
-    $('togglePin').onclick = () => { p.pinned = !p.pinned; savePosts(); toast(p.pinned ? '공지로 고정했어요.' : '공지를 해제했어요.'); renderPost(id); };
-    $('togglePub').onclick = () => { p.visibility = p.visibility === 'public' ? 'private' : 'public'; savePosts(); toast(p.visibility === 'public' ? '공개로 바꿨어요.' : '비공개로 바꿨어요.'); renderPost(id); };
+    $('togglePin').onclick = async () => { p.pinned = !p.pinned; if (await persistPost(p, p.pinned ? '공지로 고정했어요.' : '공지를 해제했어요.')) renderPost(id); };
+    $('togglePub').onclick = async () => { p.visibility = p.visibility === 'public' ? 'private' : 'public'; if (await persistPost(p, p.visibility === 'public' ? '공개로 바꿨어요.' : '비공개로 바꿨어요.')) renderPost(id); };
     $('delPost').onclick = () => confirmBox('이 글을 삭제할까요?', '삭제한 글과 댓글은 되돌릴 수 없어요.', '삭제', () => {
-      posts = posts.filter(x => x.id !== id); savePosts(); toast('글을 삭제했어요.'); location.hash = '#list';
+      posts = posts.filter(x => x.id !== id); persistDeletePost(id, '글을 삭제했어요.'); location.hash = '#list';
     });
 
     // 이전글 / 다음글 (등록일 기준)
@@ -405,7 +406,7 @@
     $('prevNext').innerHTML = pn('next','다음 글', next, '다음 글이 없습니다.') + pn('prev','이전 글', prev, '이전 글이 없습니다.');
 
     renderRelated(p);
-    if (FILE_MODE){ $('comments').hidden = true; $('comments').innerHTML = ''; } else renderComments(p);
+    renderComments(p);
   }
 
   function renderRelated(p){
@@ -446,7 +447,7 @@
     const make = f => ({ id: uid(), name: f.name.value.trim().slice(0,20), text: f.text.value.trim().slice(0,1000), createdAt: Date.now(), author: isAdmin() });
     box.querySelector('.c-form').addEventListener('submit', e => {
       e.preventDefault(); const f = e.target; if (!f.text.value.trim()) return;
-      p.comments.push(Object.assign(make(f), { replies: [] })); savePosts(); renderComments(p); toast('댓글을 등록했어요.');
+      const c = Object.assign(make(f), { replies: [] }); p.comments.push(c); renderComments(p); persistComment(p.id, c, null, '댓글을 등록했어요.');
     });
     box.querySelectorAll('[data-reply]').forEach(b => b.addEventListener('click', () => {
       const li = b.closest('.c-item'), slot = li.querySelector('.reply-slot');
@@ -456,15 +457,15 @@
       f.querySelector('[data-cancel-reply]').onclick = () => slot.innerHTML = '';
       f.addEventListener('submit', e => {
         e.preventDefault(); if (!f.text.value.trim()) return;
-        const c = p.comments.find(x => x.id === li.dataset.cid); (c.replies = c.replies || []).push(make(f));
-        savePosts(); renderComments(p); toast('답글을 등록했어요.');
+        const c = p.comments.find(x => x.id === li.dataset.cid), r = make(f); (c.replies = c.replies || []).push(r);
+        renderComments(p); persistComment(p.id, r, c.id, '답글을 등록했어요.');
       });
     }));
     box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
       const li = b.closest('.c-item'), id = li.dataset.cid;
       confirmBox('댓글을 삭제할까요?', '답글이 달린 댓글은 답글도 함께 삭제돼요.', '삭제', () => {
         p.comments = p.comments.filter(c => c.id !== id).map(c => Object.assign(c, { replies: (c.replies||[]).filter(r => r.id !== id) }));
-        savePosts(); renderComments(p); toast('댓글을 삭제했어요.');
+        renderComments(p); persistDeleteComment(id, '댓글을 삭제했어요.');
       });
     }));
   }
@@ -579,20 +580,24 @@
   $('edSaveDraft').addEventListener('click', () => { saveDraft(false); toast('임시 저장했어요. 나중에 이어서 작성할 수 있어요.'); });
 
   // 발행 / 수정
-  $('edPublish').addEventListener('click', () => {
+  $('edPublish').addEventListener('click', async () => {
     const d = collect();
     if (!d.title){ toast('제목을 입력해 주세요.'); $('edTitle').focus(); return; }
     if (!textOf(d.html) && !firstImg(d.html)){ toast('본문을 입력해 주세요.'); ed.focus(); return; }
     const now = Date.now();
-    let id = state.postId;
+    let id = state.postId, p;
     if (id){
-      const p = posts.find(x => x.id === id);
+      p = posts.find(x => x.id === id);
       Object.assign(p, { title:d.title, html:d.html, tags:d.tags, visibility:d.visibility, writeMs:d.writeMs, pinned:d.pinned, updatedAt:now });
     } else {
       id = uid();
-      posts.push({ id, title:d.title, html:d.html, tags:d.tags, visibility:d.visibility, pinned:d.pinned, createdAt:now, updatedAt:now, views:0, comments:[], writeMs:d.writeMs });
+      p = { id, title:d.title, html:d.html, tags:d.tags, visibility:d.visibility, pinned:d.pinned, createdAt:now, updatedAt:now, views:0, comments:[], writeMs:d.writeMs };
+      posts.push(p);
     }
-    if (savePosts()){
+    $('edPublish').disabled = true;
+    const ok = await persistPost(p);
+    $('edPublish').disabled = false;
+    if (ok){
       store.del(KEY_DRAFT); state.dirty = false; leavingEditor = null;
       toast(state.postId ? '수정을 저장했어요.' : '글을 등록했어요.');
       location.hash = '#post-' + id;
@@ -790,10 +795,14 @@
   addEventListener('scroll', () => hdr.classList.toggle('scrolled', scrollY > 8), {passive:true});
 
   // 다른 탭에서 바뀐 내용 반영
-  addEventListener('storage', e => { if (!FILE_MODE && e.key === KEY_POSTS){ posts = store.get(KEY_POSTS, []); if ($('viewEditor').hidden) route(); } });
+  addEventListener('storage', e => { if (!db && e.key === KEY_POSTS){ posts = store.get(KEY_POSTS, []); if ($('viewEditor').hidden) route(); } });
 
   /* ---------------- 시작 ---------------- */
   applyAdmin();
   route();
-  if (FILE_MODE) loadFilePosts();
+  if (db){
+    db.auth.onAuthStateChange((_ev, session) => { dbAdmin = !!session; applyAdmin(); });
+    db.auth.getSession().then(({ data }) => { dbAdmin = !!(data && data.session); applyAdmin(); loadAll(); })
+      .catch(() => loadAll());
+  }
 })();
