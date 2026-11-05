@@ -471,3 +471,26 @@ body.blog-page{background:#FFFFFF}
 .blog-page .hdr .nav a.btn:hover{background:var(--c-red);color:#111!important}
 @media (max-width:760px){.blog-page .hdr .nav a.btn{height:34px;padding:0 13px}}
 @media (max-width:760px){.blog-app .hdr .nav{gap:14px}}
+
+
+/* ===== 블로그 상단: 검정 배너 제거, 라임 네온 라인만 (기존 색·두께 4px 그대로) ===== */
+.board-line{height:4px;width:100%;margin-top:1px;background:var(--g)}   /* 헤더 아래 1px 경계에 가리지 않도록 */
+.crumb a{color:inherit;transition:color .2s}
+.crumb a:hover{color:var(--fg)}
+.crumb a.is-current{color:var(--fg);font-weight:700}
+
+/* ===== 블로그 목록: 아래 빈 공간 줄이기 + 페이지 번호 ===== */
+.bl-main{min-height:0}
+.blog-app>.bl-main{flex:0 0 auto}
+.blog-app>.ftr{flex:1 0 auto}          /* 글이 적어 화면이 남으면 푸터 배경이 끝까지 채움 */
+.list-bottom{margin:28px 0 48px;min-height:0}
+.list-bottom:not(:has(.pager:not([hidden]))):not(:has(.write-btn:not([hidden]))){margin-bottom:40px}
+.pager{display:flex;align-items:center;justify-content:center;gap:6px}
+.pager[hidden]{display:none}
+.pager button{all:unset;box-sizing:border-box;cursor:pointer;min-width:40px;height:40px;padding:0 6px;border-radius:999px;display:grid;place-items:center;font-size:15px;font-weight:700;color:var(--sub);font-variant-numeric:tabular-nums;transition:background-color .2s,color .2s}
+.pager button:hover:not(:disabled){background:var(--soft);color:var(--fg)}
+.pager .pg-num.on{background:#111;color:#fff}
+.pager .pg-arrow{font-size:20px;font-weight:500}
+.pager button:disabled{opacity:.3;cursor:default}
+.pager button:focus-visible{outline:3px solid var(--g-deep);outline-offset:2px}
+@media (max-width:760px){.list-bottom{margin:20px 0 36px}}

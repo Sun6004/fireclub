@@ -1680,3 +1680,51 @@ mark.hl-yellow{display:inline-block;border-radius:0;padding:.04em .42em .08em;ma
 /* '아래로 스크롤해 보세요' 살짝 투명하게 · '이해하고 투자하세요.' 라임 형광펜 조금 진하게 (20% → 35%) */
 .shift .shift-peek{opacity:.75}
 .shift .s-l2{background-image:linear-gradient(rgba(203,249,80,.35),rgba(203,249,80,.35))!important}
+
+
+/* ===== 푸터: FIRE.UP 소개 · 강의 제공처 · 투자 유의사항 · 저작권 ===== */
+.ftr .ftr-in{display:flex;flex-direction:column;gap:28px}
+.ftr p{margin:0}
+.ftr-logo{font-size:15px;letter-spacing:.01em}
+.ftr-logo b{font-size:17px;font-weight:800;letter-spacing:.02em}
+.ftr-brand .ftr-txt{margin-top:8px}
+.ftr-txt{font-size:13.5px;line-height:1.75}
+.ftr-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1.2fr);gap:20px 40px;padding-top:24px;border-top:1px solid rgba(255,255,255,.12)}
+.ftr-h{margin:0 0 8px;font-size:13px;font-weight:700;color:#FFFFFF;letter-spacing:-0.01em;line-height:1.4}
+.ftr-small{font-size:12px;line-height:1.75;color:rgba(226,232,245,.5)}
+.ftr-small+.ftr-small{margin-top:6px}
+.ftr-copy{padding-top:20px;border-top:1px solid rgba(255,255,255,.12);font-size:12px;color:rgba(226,232,245,.45);letter-spacing:.01em}
+@media (max-width:860px){.ftr-grid{grid-template-columns:1fr;gap:22px}}
+@media (max-width:760px){
+  .ftr .ftr-in{gap:22px}
+  .ftr-txt{font-size:13px}
+  .ftr-grid{padding-top:20px}
+  .ftr-copy{padding-top:16px}
+}
+.ftr-nw{white-space:nowrap}
+
+/* ===== 푸터 압축: PC 3열 (소개·제공처 / 투자 유의사항 / 저작권) ===== */
+.ftr .ftr-in{gap:22px}
+.ftr-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1.35fr) minmax(0,1fr);gap:20px 48px;padding-top:0;border-top:0}
+.ftr-brand .ftr-txt{margin-top:8px}
+.ftr-provider{margin-top:18px}
+.ftr-copy{padding-top:16px}
+@media (max-width:860px){.ftr-grid{grid-template-columns:1fr;gap:22px}.ftr-col+.ftr-col{padding-top:20px;border-top:1px solid rgba(255,255,255,.12)}}
+
+/* ===== 푸터 PC 와이드: 상단 바와 같은 좌우 여백까지 넓게 쓰고 4칸으로 ===== */
+@media (min-width:1280px){
+  .ftr .wrap.ftr-in{max-width:none;padding-left:max(24px,4vw,env(safe-area-inset-left,0px));padding-right:max(24px,4vw,env(safe-area-inset-right,0px))}
+  .ftr-grid{grid-template-columns:minmax(0,1.35fr) max-content minmax(0,1.5fr) minmax(0,1.05fr);grid-template-rows:auto 1fr;gap:0 56px}
+  .ftr-brand{display:contents}
+  .ftr-brand>.ftr-logo,.ftr-brand>.ftr-txt{grid-column:1}
+  .ftr-brand>.ftr-logo{grid-row:1}
+  .ftr-brand>.ftr-txt{grid-row:2;margin-top:10px}
+  .ftr-provider{grid-column:2;grid-row:1/3;margin-top:0}
+  .ftr-grid>.ftr-sec:not(.ftr-provider){grid-row:1/3}
+  .ftr-grid>.ftr-sec:has(#ftrNotice){grid-column:3}
+  .ftr-grid>.ftr-sec:has(#ftrCopy){grid-column:4}
+}
+.ng-fab{will-change:translate}
+
+/* 투자 전략 메인 카피: 좁은 모바일에서 "나만의 전략을 세워보세요."가 한 줄로 유지되도록 */
+.curri2 .princ h3 .nw{white-space:nowrap}

@@ -222,6 +222,22 @@
       document.body.appendChild(fab);
       document.body.appendChild(modal);
 
+      // PC: 페이지 맨 아래에서 푸터가 보이면 코인 버튼이 푸터 글자를 가리지 않도록 그만큼 위로 올림
+      const ftrEl = document.querySelector('.ftr');
+      if (ftrEl){
+        let fabRaf = 0;
+        const liftOverFooter = ()=>{
+          fabRaf = 0;
+          // PC만 적용 (모바일은 푸터가 화면보다 길어 버튼이 화면 밖으로 밀려나므로 제외)
+          const over = innerWidth > 760 ? innerHeight - ftrEl.getBoundingClientRect().top : 0;
+          fab.style.translate = over > 0 ? `0 ${-Math.round(over)}px` : '';
+        };
+        const queueLift = ()=>{ if (!fabRaf) fabRaf = requestAnimationFrame(liftOverFooter); };
+        addEventListener('scroll', queueLift, {passive:true});
+        addEventListener('resize', queueLift);
+        liftOverFooter();
+      }
+
       const $ = s => modal.querySelector(s);
       const play = $('.ng-play'), result = $('.ng-result');
       let current = -1, lastFocus = null;

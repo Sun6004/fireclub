@@ -2,7 +2,9 @@
    블로그 — blog.js
    글쓰기 에디터 · 이미지 첨부 · 임시 저장 · 미리보기 · 카테고리/태그
    검색 · 게시글 관리 · 댓글/답글 · 통계
-   ※ 서버가 없는 정적 페이지라 데이터는 이 브라우저(localStorage)에 저장됩니다.
+   ※ 글은 프로젝트의 posts/ 폴더(txt + 이미지)에서 읽어 옵니다. DB·서버가 필요 없습니다.
+     글 추가 방법은 posts/작성방법.txt 참고.
+     (FILE_MODE를 false로 바꾸면 예전처럼 브라우저 저장 + 글쓰기 화면 방식)
    ========================================================= */
 (function(){
   'use strict';
@@ -13,10 +15,16 @@
   // 관리자 비밀번호 (원문 대신 해시만 저장). 바꾸려면 README의 '비밀번호 바꾸기' 참고
   const ADMIN_PW_HASHES = ['sha256:f15522669dd9aa6a551960229cbeace904ec44a40db93701196d23934700e80f', 'fb:2fdc9ec43de4f80'];
   const KEY_SESSION = 'fc_blog_admin_session'; // 로그인 상태(탭을 닫으면 해제)
-  const PAGE_SIZE = 3;                         // 한 번에 보여 줄 글 수 (MORE를 누르면 3개씩 추가)
+  const PAGE_SIZE = 3;                         // PC 한 페이지 글 수 (4개부터 페이지 번호로 넘김)
+  const mqMobile = matchMedia('(max-width: 760px)');   // 모바일: 전체 글을 1개씩 옆으로 넘기기
   const AUTOSAVE_MS = 700;
   const IMG_MAX = 1600;          // 첨부 이미지 최대 가로(px)
   const IMG_QUALITY = 0.85;
+
+  /* ---------------- 파일 방식 글 (posts/ 폴더) ---------------- */
+  const FILE_MODE = true;
+  const POSTS_DIR = 'posts/';
+  let loading = FILE_MODE, loadError = '';
 
   /* ---------------- 저장소 ---------------- */
   const mem = {};
@@ -32,9 +40,9 @@
     },
     del(k){ try { localStorage.removeItem(k); } catch(e){ delete mem[k]; } }
   };
-  let posts = store.get(KEY_POSTS, []);
+  let posts = FILE_MODE ? [] : store.get(KEY_POSTS, []);
   const savePosts = () => store.set(KEY_POSTS, posts);
-  const isAdmin = () => { try { return sessionStorage.getItem(KEY_SESSION) === '1'; } catch(e){ return !!mem.__session; } };
+  const isAdmin = () => { if (FILE_MODE) return false; try { return sessionStorage.getItem(KEY_SESSION) === '1'; } catch(e){ return !!mem.__session; } };
 
   /* ---------------- 유틸 ---------------- */
   const $ = id => document.getElementById(id);
@@ -73,7 +81,7 @@
           const n = a.name.toLowerCase(), v = a.value;
           let keep = false;
           if (tag === 'A' && n === 'href' && /^(https?:|mailto:)/i.test(v.trim())) keep = true;
-          if (tag === 'IMG' && n === 'src' && /^(data:image\/(png|jpe?g|gif|webp);base64,|https?:)/i.test(v.trim())) keep = true;
+          if (tag === 'IMG' && n === 'src' && /^(data:image\/(png|jpe?g|gif|webp);base64,|https?:|posts\/)/i.test(v.trim())) keep = true;
           if (tag === 'IMG' && n === 'alt') keep = true;
           if (tag === 'FIGURE' && n === 'class'){ ch.setAttribute('class', v.split(/\s+/).filter(c => FIG_CLASSES.test(c)).join(' ')); keep = true; }
           if (!keep) ch.removeAttribute(a.name);
@@ -85,6 +93,66 @@
     })(root);
     root.querySelectorAll('p').forEach(p => { if (!p.textContent.trim() && !p.querySelector('img,br')) p.remove(); });
     return root.innerHTML.trim();
+  }
+
+  /* ---------------- posts/ 폴더의 txt 읽기 ----------------
+     post.txt 형식
+       제목: ...            (필수)
+       날짜: 2026-11-05     (필수, 시간까지 쓰려면 2026-11-05 14:30)
+       태그: ETF, 기초      (선택)
+       공지: 예             (선택, 목록 맨 앞에 고정)
+       썸네일: cover.jpg    (선택, 없으면 본문 첫 이미지)
+       (빈 줄 다음부터 본문)
+     본문 규칙: 빈 줄 = 문단 나눔 / ## 소제목 / > 인용 / - 목록 / **굵게**
+               [이미지: chart.png] 또는 [이미지: chart.png | 사진 설명] / 링크 https://... 자동 연결 */
+  const inline = s => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  function parsePostTxt(txt, folder){
+    txt = txt.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    const cut = txt.search(/\n\s*\n/);
+    const headPart = cut < 0 ? txt : txt.slice(0, cut), bodyPart = cut < 0 ? '' : txt.slice(cut).trim();
+    const meta = {};
+    headPart.split('\n').forEach(l => { const m = /^\s*([^:：]+)\s*[:：]\s*(.*)$/.exec(l); if (m) meta[m[1].trim()] = m[2].trim(); });
+    const base = POSTS_DIR + folder + '/';
+    const imgSrc = f => /^(https?:|data:)/.test(f) ? f : base + encodeURI(f.trim());
+    const html = bodyPart.split(/\n\s*\n/).map(block => {
+      const lines = block.split('\n').map(l => l.trimEnd());
+      const img = /^\[\s*이미지\s*[:：]\s*([^\]|]+?)\s*(?:\|\s*([^\]]*))?\]$/.exec(block.trim());
+      if (img) return `<figure class="w-100 al-center"><img src="${esc(imgSrc(img[1]))}" alt="${esc(img[2] || '')}">${img[2] ? `<figcaption>${esc(img[2])}</figcaption>` : ''}</figure>`;
+      if (/^##\s/.test(lines[0])) return `<h2>${inline(lines[0].replace(/^##\s*/, ''))}</h2>` + (lines.length > 1 ? `<p>${lines.slice(1).map(inline).join('<br>')}</p>` : '');
+      if (lines.every(l => /^>\s?/.test(l))) return `<blockquote><p>${lines.map(l => inline(l.replace(/^>\s?/, ''))).join('<br>')}</p></blockquote>`;
+      if (lines.every(l => /^[-•]\s/.test(l))) return `<ul>${lines.map(l => `<li>${inline(l.replace(/^[-•]\s*/, ''))}</li>`).join('')}</ul>`;
+      return `<p>${lines.map(inline).join('<br>')}</p>`;
+    }).join('');
+    const d = (meta['날짜'] || '').replace(/\./g, '-');
+    const t = Date.parse(d.length <= 10 ? d + 'T09:00:00' : d.replace(' ', 'T'));
+    const thumb = meta['썸네일'] ? imgSrc(meta['썸네일']) : '';
+    return {
+      id: folder, title: meta['제목'] || folder, html: sanitize(html),
+      tags: (meta['태그'] || '').split(/[,，]/).map(s => s.trim().replace(/^#/, '')).filter(Boolean),
+      visibility: 'public', pinned: /^(예|yes|y|true|1)$/i.test(meta['공지'] || ''),
+      createdAt: isNaN(t) ? 0 : t, updatedAt: isNaN(t) ? 0 : t, views: 0, comments: [], thumb
+    };
+  }
+  async function loadFilePosts(){
+    try {
+      if (Array.isArray(window.BLOG_FILE_POSTS)){   // 미리보기용으로 글을 미리 넣어 둔 경우
+        posts = window.BLOG_FILE_POSTS.map(x => parsePostTxt(x.txt, x.folder));
+      } else {
+        const get = async u => { const r = await fetch(u, { cache:'no-cache' }); if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); };
+        const folders = (await get(POSTS_DIR + 'list.txt')).split(/\r?\n/).map(s => s.trim()).filter(s => s && !s.startsWith('#'));
+        const loaded = await Promise.all(folders.map(f => get(POSTS_DIR + f + '/post.txt').then(t => parsePostTxt(t, f)).catch(e => { console.warn('[blog] 글을 읽지 못함:', f, e); return null; })));
+        posts = loaded.filter(Boolean);
+      }
+    } catch(e){
+      console.warn('[blog] posts/list.txt를 읽지 못했습니다.', e);
+      loadError = location.protocol === 'file:'
+        ? '<h3>글을 불러오지 못했어요</h3><p>내 컴퓨터에서 파일을 더블클릭해 열면 브라우저가 글 파일 읽기를 막습니다.<br>사이트에 올리거나 로컬 서버(예: VS Code Live Server)로 열어 주세요.</p>'
+        : '<h3>글을 불러오지 못했어요</h3><p>posts/list.txt 파일이 있는지 확인해 주세요.</p>';
+    }
+    loading = false;
+    route(true);
   }
 
   /* ---------------- 관리자 로그인 ----------------
@@ -137,9 +205,10 @@
   const views = ['viewList','viewPost','viewEditor','viewLocked'];
   function show(id){ views.forEach(v => $(v).hidden = v !== id); }
   let leavingEditor = null;
-  function route(){
+  function route(keepScroll){
     const h = location.hash.replace('#','');
     if (leavingEditor && !/^write$|^edit-/.test(h)){ leavingEditor(); leavingEditor = null; }
+    if (FILE_MODE && (h === 'admin' || h === 'write' || h.startsWith('edit-'))){ history.replaceState(null,'','#list'); renderList(); show('viewList'); return; }
     if (h === 'admin'){ history.replaceState(null,'','#list'); renderList(); show('viewList'); if (!isAdmin()) openLogin(); return; }
     if (h === 'write' || h.startsWith('edit-')){
       if (!isAdmin()){ show('viewLocked'); return; }
@@ -150,7 +219,7 @@
     } else {
       renderList(); show('viewList');
     }
-    window.scrollTo(0,0);
+    if (keepScroll !== true) window.scrollTo(0,0);
   }
   addEventListener('hashchange', route);
 
@@ -158,7 +227,14 @@
   const filter = { tag:'', q:'', scope:'title', page:1 };
   const visiblePosts = () => posts.filter(p => isAdmin() || p.visibility === 'public');
   const cmtCount = p => (p.comments||[]).reduce((a,c)=> a + 1 + (c.replies||[]).length, 0);
-  function setBoardTitle(t){ $('boardTitle').textContent = t; $('crumbLast').textContent = t; }
+  function setBoardTitle(t){
+    $('boardTitle').textContent = t;
+    // 경로: HOME › 블로그 (목록·글 보기) / HOME › 블로그 › 글쓰기·글 수정
+    const sub = t !== '블로그', blog = $('crumbBlog');
+    $('crumbTail').hidden = !sub; $('crumbLast').textContent = sub ? t : '';
+    blog.classList.toggle('is-current', !sub);
+    if (sub) blog.removeAttribute('aria-current'); else blog.setAttribute('aria-current','page');
+  }
 
   function match(p){
     if (filter.tag && !(p.tags||[]).includes(filter.tag)) return false;
@@ -179,12 +255,14 @@
     if (filter.tag) $('clearTag').onclick = () => { filter.tag = ''; filter.page = 1; renderList(); };
 
     const all = visiblePosts().filter(match).sort((a,b) => (b.pinned?1:0) - (a.pinned?1:0) || b.createdAt - a.createdAt);
-    const shown = all.slice(0, filter.page * PAGE_SIZE);   // MORE를 누를 때마다 3개씩 더
+    const pages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+    filter.page = Math.min(Math.max(1, filter.page), pages);
+    const shown = mqMobile.matches ? all : all.slice((filter.page - 1) * PAGE_SIZE, filter.page * PAGE_SIZE);
     const any = visiblePosts().length > 0;
     $('resultLine').innerHTML = any ? `총 <b>${all.length}</b>건` + (filter.q ? ` · ‘${esc(filter.q)}’ 검색 결과` : '') : '';
 
     $('postList').innerHTML = shown.map(p => {
-      const img = firstImg(p.html), c = cmtCount(p), d = new Date(p.createdAt);
+      const img = p.thumb || firstImg(p.html), c = cmtCount(p), d = new Date(p.createdAt);
       return `<article class="card">
         <a href="#post-${p.id}">
           <div class="card-thumb${img ? '' : ' no-img'}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span>Fire.up</span>'}
@@ -192,12 +270,12 @@
           <div class="card-body">
             <h3>${esc(p.title)}</h3>
             <p>${esc(textOf(p.html).slice(0,140))}</p>
-            <div class="card-meta"><time>${fmtDate(p.createdAt).replace(/\./g,'-')}</time><span>${fmtTime(p.createdAt)}</span><span class="v">조회 ${p.views||0}${c ? ` · 댓글 ${c}` : ''}</span></div>
+            <div class="card-meta"><time>${fmtDate(p.createdAt).replace(/\./g,'-')}</time>${FILE_MODE ? '' : `<span>${fmtTime(p.createdAt)}</span>`}${FILE_MODE ? '' : `<span class="v">조회 ${p.views||0}${c ? ` · 댓글 ${c}` : ''}</span>`}</div>
           </div>
         </a>
       </article>`;
     }).join('');
-    $('moreBtn').hidden = shown.length >= all.length;
+    renderPager(mqMobile.matches ? 1 : pages);
     $('postList').scrollLeft = 0;
     requestAnimationFrame(updateCardCtrl);   // 화면에 보인 뒤 넘김 버튼 표시 여부 계산
 
@@ -210,13 +288,29 @@
     } else if (!all.length){
       empty.innerHTML = '<h3>검색 결과가 없어요</h3><p>다른 검색어로 찾아 보세요.</p>';
     }
+    if (loading){ empty.hidden = false; empty.innerHTML = '<h3>글을 불러오는 중이에요</h3>'; }
+    else if (loadError){ empty.hidden = false; empty.innerHTML = loadError; }
   }
-  $('moreBtn').addEventListener('click', () => {
-    const before = filter.page * PAGE_SIZE;
-    filter.page += 1; renderList();
-    const list = $('postList'), card = list.children[before];
-    if (card && list.scrollWidth > list.clientWidth + 2) list.scrollTo({left: card.offsetLeft - list.offsetLeft, behavior:'smooth'});   // 모바일: 새로 불러온 첫 글로 이동
+  // PC 페이지 번호: ‹ 1 2 3 ›
+  function renderPager(pages){
+    const pg = $('pager');
+    pg.hidden = pages <= 1;
+    if (pg.hidden){ pg.innerHTML = ''; return; }
+    const cur = filter.page;
+    let h = `<button type="button" class="pg-arrow" data-page="${cur-1}" aria-label="이전 페이지"${cur<=1?' disabled':''}>‹</button>`;
+    for (let i = 1; i <= pages; i++) h += `<button type="button" class="pg-num${i===cur?' on':''}" data-page="${i}"${i===cur?' aria-current="page"':''}>${i}</button>`;
+    h += `<button type="button" class="pg-arrow" data-page="${cur+1}" aria-label="다음 페이지"${cur>=pages?' disabled':''}>›</button>`;
+    pg.innerHTML = h;
+  }
+  $('pager').addEventListener('click', e => {
+    const b = e.target.closest('button[data-page]');
+    if (!b || b.disabled) return;
+    filter.page = +b.dataset.page; renderList();
+    const top = $('postList').getBoundingClientRect().top + scrollY - 140;
+    if (scrollY > top) scrollTo({top, behavior:'smooth'});
   });
+  // PC ↔ 모바일 전환 시 목록 다시 그리기
+  mqMobile.addEventListener('change', () => { if (!$('viewList').hidden) renderList(); });
 
   // 모바일: 카드 한 장씩 좌우로 넘기기
   const cardList = $('postList');
@@ -248,9 +342,9 @@
       <h1>${esc(p.title || '제목 없음')}</h1>
       <div class="pi-meta">
         <span><b>작성자</b>포메뽀꼬</span>
-        <span><b>작성일</b>${fmt(p.createdAt)}</span>
+        <span><b>작성일</b>${FILE_MODE ? fmtDate(p.createdAt) : fmt(p.createdAt)}</span>
         ${p.updatedAt && p.updatedAt - p.createdAt > 60000 ? `<span><b>수정일</b>${fmt(p.updatedAt)}</span>` : ''}
-        <span><b>조회</b>${p.views||0}</span>
+        ${FILE_MODE ? '' : `<span><b>조회</b>${p.views||0}</span>`}
         ${isAdmin() && p.writeMs ? `<span><b>작성 소요</b>${durText(p.writeMs)}</span>` : ''}
       </div>
     </header>
@@ -269,13 +363,13 @@
     const p = posts.find(x => x.id === id);
     const art = $('postArticle');
     const clear = msg => { art.innerHTML = `<div class="private-note">${msg}</div>`; $('postAdmin').innerHTML=''; $('related').hidden = true; $('comments').innerHTML=''; $('prevNext').innerHTML=''; };
-    if (!p){ clear('글을 찾을 수 없어요.'); return; }
+    if (!p){ clear(loading ? '글을 불러오는 중이에요…' : '글을 찾을 수 없어요.'); return; }
     if (p.visibility === 'private' && !isAdmin()){ clear('비공개 글입니다.'); return; }
 
     // 조회수: 세션당 1회
     const vk = 'fc_viewed_' + id;
     let counted = false; try { counted = sessionStorage.getItem(vk) === '1'; } catch(e){}
-    if (!counted){ p.views = (p.views||0) + 1; savePosts(); try { sessionStorage.setItem(vk,'1'); } catch(e){} }
+    if (!counted && !FILE_MODE){ p.views = (p.views||0) + 1; savePosts(); try { sessionStorage.setItem(vk,'1'); } catch(e){} }
 
     art.innerHTML = postHead(p) + postExtras(p);
     art.querySelectorAll('[data-tag]').forEach(a => a.addEventListener('click', () => { filter.tag = a.dataset.tag; filter.page = 1; }));
@@ -311,7 +405,7 @@
     $('prevNext').innerHTML = pn('next','다음 글', next, '다음 글이 없습니다.') + pn('prev','이전 글', prev, '이전 글이 없습니다.');
 
     renderRelated(p);
-    renderComments(p);
+    if (FILE_MODE){ $('comments').hidden = true; $('comments').innerHTML = ''; } else renderComments(p);
   }
 
   function renderRelated(p){
@@ -696,9 +790,10 @@
   addEventListener('scroll', () => hdr.classList.toggle('scrolled', scrollY > 8), {passive:true});
 
   // 다른 탭에서 바뀐 내용 반영
-  addEventListener('storage', e => { if (e.key === KEY_POSTS){ posts = store.get(KEY_POSTS, []); if ($('viewEditor').hidden) route(); } });
+  addEventListener('storage', e => { if (!FILE_MODE && e.key === KEY_POSTS){ posts = store.get(KEY_POSTS, []); if ($('viewEditor').hidden) route(); } });
 
   /* ---------------- 시작 ---------------- */
   applyAdmin();
   route();
+  if (FILE_MODE) loadFilePosts();
 })();

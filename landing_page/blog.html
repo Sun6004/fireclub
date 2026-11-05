@@ -41,18 +41,13 @@
 
   <main class="bl-main">
 
-    <!-- ===== 게시판 상단 배너 + 분류 탭 ===== -->
-    <section class="board-hero">
-      <div class="wrap">
-        <h1>블로그</h1>
-        <p class="en">FIRE.UP INVESTMENT NOTE</p>
-      </div>
-    </section>
+    <!-- ===== 상단 라임 네온 라인 (배너 제거, 라인만 유지) ===== -->
+    <div class="board-line" aria-hidden="true"></div>
 
     <div class="wrap board-wrap">
       <div class="board-head">
         <h2 id="boardTitle">블로그</h2>
-        <p class="crumb"><span class="home" aria-hidden="true"></span>HOME <i>›</i> 블로그 <i>›</i> <b id="crumbLast">블로그</b></p>
+        <p class="crumb"><span class="home" aria-hidden="true"></span><a href="index.html">HOME</a> <i>›</i> <a href="#list" id="crumbBlog" class="is-current" aria-current="page">블로그</a><span id="crumbTail" hidden> <i>›</i> <b id="crumbLast"></b></span></p>
       </div>
 
       <!-- ============ 목록 ============ -->
@@ -81,7 +76,7 @@
         <div class="empty" id="emptyList" hidden></div>
 
         <div class="list-bottom">
-          <button type="button" class="more-btn" id="moreBtn" hidden>MORE<span aria-hidden="true">›</span></button>
+          <nav class="pager" id="pager" aria-label="글 목록 페이지" hidden></nav>
           <a class="btn btn-primary write-btn only-admin" href="#write">글쓰기</a>
         </div>
       </section>
@@ -202,9 +197,27 @@
 
   <!-- ===== FOOTER ===== -->
   <footer class="ftr">
-    <div class="wrap">
-      <b>파이어클럽(FIREclub)</b> · 주식회사 머니투데이 · 대표전화 02-767-6879<br>
-      파이어클럽의 모든 콘텐츠는 저작권법의 보호를 받으며, 무단 전재·복사·배포 등을 금지합니다.
+    <div class="wrap ftr-in">
+      <div class="ftr-grid">
+        <div class="ftr-col ftr-brand">
+          <p class="ftr-logo"><b>FIRE.UP</b> | 파이어업</p>
+          <p class="ftr-txt">본 페이지는 FIRE.UP이 제작한 미국 ETF 투자 교육 강의 홍보용 랜딩페이지입니다. 강의에 대한 자세한 정보 확인과 수강 신청 및 결제는 파이어클럽(FIREclub) 공식 사이트에서 진행됩니다.</p>
+          <section class="ftr-sec ftr-provider" aria-labelledby="ftrProvider">
+            <h3 class="ftr-h" id="ftrProvider">강의 제공처 안내</h3>
+            <p class="ftr-txt"><span class="ftr-nw">파이어클럽(FIREclub)</span> | <span class="ftr-nw">주식회사 머니투데이</span><br>대표전화: 02-767-6879</p>
+          </section>
+        </div>
+        <section class="ftr-col ftr-sec" aria-labelledby="ftrNotice">
+          <h3 class="ftr-h" id="ftrNotice">투자 유의사항</h3>
+          <p class="ftr-small">본 페이지에서 소개하는 강의는 미국 ETF 투자에 관한 일반적인 정보 제공 및 교육을 목적으로 하며, 특정 금융상품의 매수·매도를 권유하거나 투자 수익을 보장하지 않습니다.</p>
+          <p class="ftr-small">모든 투자에는 원금 손실 위험이 있으며, 투자에 관한 최종 판단과 책임은 투자자 본인에게 있습니다. 과거의 투자 성과는 미래의 수익을 보장하지 않습니다.</p>
+        </section>
+        <section class="ftr-col ftr-sec" aria-labelledby="ftrCopy">
+          <h3 class="ftr-h" id="ftrCopy">저작권 안내</h3>
+          <p class="ftr-small">본 페이지에 사용된 이미지, 텍스트 및 기타 콘텐츠의 저작권은 각 권리자에게 있으며, 사전 허가 없는 무단 복제·전재·배포를 금지합니다.</p>
+        </section>
+      </div>
+        <p class="ftr-copy">© 2026 FIRE.UP. All rights reserved.</p>
     </div>
   </footer>
 
