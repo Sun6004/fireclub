@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>포메뽀꼬의 투자 노트</title>
+  <meta name="description" content="포메뽀꼬의 미국 ETF 투자 블로그">
+
+  <!-- 웹폰트 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+
+  <!-- 스타일: 랜딩페이지 공통 스타일 + 블로그 전용 스타일 -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/blog.css">
+</head>
+<body class="blog-page">
+<div class="blog-app">
+
+  <!-- ===== 관리자 바 (로그인했을 때만) ===== -->
+  <div class="admin-bar only-admin" id="adminBar">
+    <div class="wrap">
+      <span class="ab-label"><i aria-hidden="true"></i>관리자 모드</span>
+      <span class="grow"></span>
+      <a href="#write">글쓰기</a>
+      <button type="button" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- ===== HEADER ===== -->
+  <header class="hdr" id="hdr">
+    <div class="wrap">
+      <a class="logo" href="index.html"><img class="logo-img" src="assets/images/logo-white.png" alt="Fire.up" width="877" height="358"></a>
+      <nav class="nav">
+        <a href="index.html" class="nav-back">강의 소개<span class="nb-long">로 돌아가기</span></a>
+        <a class="btn btn-primary" href="https://fireclub.liveklass.com/classes/266958" target="_blank" rel="noopener">홈페이지</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="bl-main">
+
+    <!-- ===== 게시판 상단 배너 + 분류 탭 ===== -->
+    <section class="board-hero">
+      <div class="wrap">
+        <h1>블로그</h1>
+        <p class="en">FIRE.UP INVESTMENT NOTE</p>
+      </div>
+    </section>
+
+    <div class="wrap board-wrap">
+      <div class="board-head">
+        <h2 id="boardTitle">투자 노트</h2>
+        <p class="crumb"><span class="home" aria-hidden="true"></span>HOME <i>›</i> 블로그 <i>›</i> <b id="crumbLast">투자 노트</b></p>
+      </div>
+
+      <!-- ============ 목록 ============ -->
+      <section class="view" id="viewList" hidden>
+        <div class="list-top">
+          <p class="result-line" id="resultLine"></p>
+          <form class="search" id="searchForm" role="search" autocomplete="off">
+            <select id="searchScope" aria-label="검색 범위">
+              <option value="title">제목</option>
+              <option value="body">본문</option>
+              <option value="tag">태그</option>
+              <option value="all">전체</option>
+            </select>
+            <input type="search" id="searchInput" placeholder="검색어 입력" aria-label="검색어">
+            <button type="submit" aria-label="검색"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+          </form>
+        </div>
+        <div class="tag-filter" id="tagFilter" hidden></div>
+
+        <div class="card-list" id="postList"></div>
+        <div class="card-ctrl" id="cardCtrl" hidden>
+          <span class="cnt" id="cardCnt"></span>
+          <button type="button" id="cardPrev" aria-label="이전 글"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <button type="button" id="cardNext" aria-label="다음 글"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+        <div class="empty" id="emptyList" hidden></div>
+
+        <div class="list-bottom">
+          <button type="button" class="more-btn" id="moreBtn" hidden>MORE<span aria-hidden="true">›</span></button>
+          <a class="btn btn-primary write-btn only-admin" href="#write">글쓰기</a>
+        </div>
+      </section>
+
+      <!-- ============ 글 보기 ============ -->
+      <section class="view" id="viewPost" hidden>
+        <article id="postArticle"></article>
+        <div class="post-admin only-admin" id="postAdmin"></div>
+        <div class="list-btn-row"><a class="btn btn-primary" href="#list" id="toList">목록</a></div>
+        <div class="prevnext" id="prevNext"></div>
+        <section class="related" id="related" hidden></section>
+        <section class="comments" id="comments"></section>
+      </section>
+
+      <!-- ============ 글쓰기 / 수정 (관리자) ============ -->
+      <section class="view" id="viewEditor" hidden>
+        <div class="draft-banner" id="draftBanner" hidden></div>
+
+        <div class="ed-top">
+          <h1 class="ed-heading" id="edHeading">새 글 쓰기</h1>
+          <p class="ed-status" id="edStatus" aria-live="polite"></p>
+        </div>
+
+        <input type="text" class="ed-title" id="edTitle" placeholder="제목을 입력하세요" maxlength="120" aria-label="제목">
+
+        <div class="ed-meta">
+          <div class="field tags-field">
+            <span>태그</span>
+            <div class="tag-input" id="tagInputBox">
+              <div class="tag-chips" id="edTagChips"></div>
+              <input type="text" id="edTagInput" placeholder="입력 후 Enter" aria-label="태그 입력">
+            </div>
+          </div>
+          <div class="field">
+            <span>공개 설정</span>
+            <div class="seg" id="edVisibility" role="radiogroup" aria-label="공개 설정">
+              <button type="button" role="radio" data-v="public" aria-checked="true">공개</button>
+              <button type="button" role="radio" data-v="private" aria-checked="false">비공개</button>
+            </div>
+          </div>
+        </div>
+        <label class="pin-check"><input type="checkbox" id="edPinned"> 목록 맨 위에 <b>공지</b>로 고정</label>
+
+        <!-- 툴바 -->
+        <div class="toolbar" id="toolbar" role="toolbar" aria-label="서식">
+          <button type="button" data-block="p" title="본문">본문</button>
+          <button type="button" data-block="h1" title="제목 1">H1</button>
+          <button type="button" data-block="h2" title="제목 2">H2</button>
+          <button type="button" data-block="h3" title="제목 3">H3</button>
+          <span class="tb-sep"></span>
+          <button type="button" data-cmd="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
+          <button type="button" data-cmd="link" title="링크"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button>
+          <button type="button" data-block="blockquote" title="인용문"><svg viewBox="0 0 24 24"><path d="M7 7h4v4H8c0 2 1 3 3 3v2c-3 0-5-2-5-5V7zM14 7h4v4h-3c0 2 1 3 3 3v2c-3 0-5-2-5-5V7z"/></svg></button>
+          <span class="tb-sep"></span>
+          <button type="button" data-cmd="image" title="이미지 첨부"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg><span>이미지</span></button>
+          <input type="file" id="imgFile" accept="image/*" multiple hidden>
+        </div>
+
+        <div class="editor-wrap" id="editorWrap">
+          <div class="editor prose" id="editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="본문" data-placeholder="본문을 입력하세요. 툴바로 제목·굵게·링크·인용문·이미지를 넣을 수 있어요."></div>
+
+          <div class="img-tools" id="imgTools" hidden>
+            <span class="it-lbl">크기</span>
+            <button type="button" data-w="25">25%</button>
+            <button type="button" data-w="50">50%</button>
+            <button type="button" data-w="75">75%</button>
+            <button type="button" data-w="100">100%</button>
+            <span class="tb-sep"></span>
+            <span class="it-lbl">정렬</span>
+            <button type="button" data-a="left" title="왼쪽">좌</button>
+            <button type="button" data-a="center" title="가운데">중</button>
+            <button type="button" data-a="right" title="오른쪽">우</button>
+            <span class="tb-sep"></span>
+            <button type="button" data-act="caption">캡션</button>
+            <button type="button" data-act="remove" class="danger">삭제</button>
+          </div>
+
+          <div class="link-pop" id="linkPop" hidden>
+            <input type="url" id="linkInput" placeholder="https://" aria-label="링크 주소">
+            <button type="button" id="linkApply">적용</button>
+            <button type="button" id="linkRemove" class="ghost">해제</button>
+          </div>
+        </div>
+
+        <div class="ed-actions">
+          <button type="button" class="btn btn-ghost" id="edCancel">취소</button>
+          <span class="grow"></span>
+          <button type="button" class="btn btn-ghost" id="edSaveDraft">임시 저장</button>
+          <button type="button" class="btn btn-ghost" id="edPreview">미리보기</button>
+          <button type="button" class="btn btn-primary" id="edPublish">등록</button>
+        </div>
+      </section>
+
+      <!-- ============ 권한 없음 ============ -->
+      <section class="view" id="viewLocked" hidden>
+        <div class="locked">
+          <h2>관리자만 글을 쓸 수 있어요</h2>
+          <p>관리자 로그인 후 이용해 주세요.</p>
+          <div class="locked-actions">
+            <a class="btn btn-ghost" href="#list">목록으로</a>
+            <button type="button" class="btn btn-primary" data-open-login>관리자 로그인</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== 하단 CTA (랜딩페이지 마지막 CTA와 같은 띠 형태) ===== -->
+  <section class="final blog-cta">
+    <div class="wrap">
+      <h2>투자에 확신을 더하는 <br class="m-br">첫걸음</h2>
+      <p class="sub">미국 ETF의 기초부터 포트폴리오 전략까지, <br>포메뽀꼬와 함께 <br class="m-br">나만의 투자 기준을 세워보세요.</p>
+      <div class="btn-row final-cta">
+        <a class="btn btn-primary" href="https://fireclub.liveklass.com/classes/266958" target="_blank" rel="noopener">미국 ETF 투자법 자세히 알아보기 <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="ftr">
+    <div class="wrap">
+      <b>파이어클럽(FIREclub)</b> · 주식회사 머니투데이 · 대표전화 02-767-6879<br>
+      파이어클럽의 모든 콘텐츠는 저작권법의 보호를 받으며, 무단 전재·복사·배포 등을 금지합니다.
+      <p class="ftr-admin"><button type="button" class="admin-link" data-open-login id="footerAdmin">관리자</button></p>
+    </div>
+  </footer>
+
+  <!-- ===== 관리자 로그인 ===== -->
+  <div class="modal" id="loginModal" hidden role="dialog" aria-modal="true" aria-labelledby="lgTitle">
+    <div class="modal-backdrop" data-cancel></div>
+    <form class="cf-panel login-panel" id="loginForm" autocomplete="off">
+      <h2 id="lgTitle">관리자 로그인</h2>
+      <p id="lgDesc">관리자 비밀번호를 입력하세요.</p>
+      <label class="lg-field"><span>비밀번호</span><input type="password" id="lgPw" autocomplete="current-password" required minlength="4"></label>
+      <label class="lg-field" id="lgPw2Row" hidden><span>비밀번호 확인</span><input type="password" id="lgPw2" autocomplete="new-password"></label>
+      <p class="lg-error" id="lgError" role="alert"></p>
+      <div class="cf-actions">
+        <button type="button" class="btn btn-ghost" data-cancel>취소</button>
+        <button type="submit" class="btn btn-primary" id="lgSubmit">로그인</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===== 미리보기 ===== -->
+  <div class="modal" id="previewModal" hidden role="dialog" aria-modal="true" aria-label="미리보기">
+    <div class="modal-backdrop" data-close></div>
+    <div class="pv-panel">
+      <div class="pv-bar">
+        <div class="seg" id="pvDevice" role="radiogroup" aria-label="화면 크기">
+          <button type="button" role="radio" data-d="pc" aria-checked="true">PC</button>
+          <button type="button" role="radio" data-d="mobile" aria-checked="false">모바일</button>
+        </div>
+        <button type="button" class="pv-close" data-close aria-label="미리보기 닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="pv-stage"><div class="pv-frame" id="pvFrame"></div></div>
+    </div>
+  </div>
+
+  <!-- ===== 확인 창 ===== -->
+  <div class="modal" id="confirmModal" hidden role="alertdialog" aria-modal="true" aria-labelledby="cfTitle">
+    <div class="modal-backdrop" data-cancel></div>
+    <div class="cf-panel">
+      <h2 id="cfTitle"></h2>
+      <p id="cfDesc"></p>
+      <div class="cf-actions">
+        <button type="button" class="btn btn-ghost" data-cancel>취소</button>
+        <button type="button" class="btn btn-danger" id="cfOk">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</div>
+
+  <script src="js/blog.js"></script>
+</body>
+</html>
