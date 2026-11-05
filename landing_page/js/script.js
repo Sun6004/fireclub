@@ -400,7 +400,7 @@
 
     // HERO intro
 
-    // SECTION 01-B — '감으로' 취소선 → 단어 교체 → '이해하고 시작하세요.' (스크롤 연동)
+    // SECTION 01-B — '감으로' 취소선 → 단어 교체 → '이해하고 투자하세요.' (스크롤 연동)
     (function(){
       const words = gsap.utils.toArray('.shift .s-word');
       const strikes = words.map(w=> w.querySelector('.st'));

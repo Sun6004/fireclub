@@ -146,7 +146,7 @@
       openEditor(h === 'write' ? null : h.slice(5));
       show('viewEditor'); setBoardTitle(h === 'write' ? '글쓰기' : '글 수정');
     } else if (h.startsWith('post-')){
-      renderPost(h.slice(5)); show('viewPost'); setBoardTitle('투자 노트');
+      renderPost(h.slice(5)); show('viewPost'); setBoardTitle('블로그');
     } else {
       renderList(); show('viewList');
     }
@@ -172,7 +172,7 @@
   }
 
   function renderList(){
-    setBoardTitle('투자 노트');
+    setBoardTitle('블로그');
     const tf = $('tagFilter');
     tf.hidden = !filter.tag;
     tf.innerHTML = filter.tag ? `태그 <b>#${esc(filter.tag)}</b> 글만 보는 중 <button type="button" id="clearTag">해제</button>` : '';

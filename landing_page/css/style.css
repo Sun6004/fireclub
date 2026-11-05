@@ -1677,6 +1677,6 @@ mark.hl-yellow{display:inline-block;border-radius:0;padding:.04em .42em .08em;ma
 }
 
 
-/* '아래로 스크롤해 보세요' 살짝 투명하게 · '이해하고 시작하세요.' 라임 형광펜 조금 진하게 (20% → 35%) */
+/* '아래로 스크롤해 보세요' 살짝 투명하게 · '이해하고 투자하세요.' 라임 형광펜 조금 진하게 (20% → 35%) */
 .shift .shift-peek{opacity:.75}
 .shift .s-l2{background-image:linear-gradient(rgba(203,249,80,.35),rgba(203,249,80,.35))!important}
