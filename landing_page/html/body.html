@@ -1,7 +1,7 @@
 <!-- ===== BODY : 히어로 · 책→노트북 · 핵심 내용 · 강사 소개 · 최종 CTA ===== -->
 <main id="top">
   <!-- 01 HERO (SHIFT) : 스크롤하면 '감으로' → '이해하고' 로 넘어가는 히어로 -->
-  <section class="shift" id="shift" data-hero aria-label="감으로 투자하지 말고 이해하고 투자하세요">
+  <section class="shift" id="shift" data-hero aria-label="이제는 감이 아닌, 이해를 바탕으로 투자할 차례">
     <div class="shift-dark">
     <div class="wrap shift-in">
       <p class="s-eyebrow shift-enter">포메뽀꼬의 미국 ETF 투자법</p>
@@ -211,10 +211,17 @@
     </div>
   </section>
 
+  <!-- 마지막 CTA (PC 1200px 이상): 한 줄 제목이 버튼에 붙지 않도록 글은 왼쪽으로, 버튼 위치는 그대로 -->
+  <style>
+    @media (min-width:1200px){
+      .final .wrap{max-width:1180px;padding-left:max(24px,4vw);padding-right:82px;column-gap:96px}
+      .final .final-cta{transform:none}
+    }
+  </style>
   <section class="final" id="enroll">
     <div class="wrap">
-      <h2>ETF는 시작했는데,<br><span class="nw">투자 전략은 세우셨나요?</span></h2>
-      <p class="sub"><span class="nw">어떤 ETF를 선택할지부터</span> <span class="nw">어떻게 자산을 관리할지까지.</span></p>
+      <h2>이제는 감이 아닌,<br><span class="nw">이해를 바탕으로 투자할 차례.</span></h2>
+      <p class="sub">아직도 고민 중이신가요?<br><span class="nw">강의가 나에게 필요한지, 어떤 내용을 배우는지</span><br><span class="nw">자세히 살펴보고 결정해 보세요.</span></p>
       <div class="btn-row final-cta">
         <a class="btn btn-primary" href="https://fireclub.liveklass.com/classes/266958" target="_blank" rel="noopener">포메뽀꼬의 투자 전략 확인하기 <span aria-hidden="true">→</span></a>
       </div>
