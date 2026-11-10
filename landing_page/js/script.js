@@ -52,7 +52,7 @@
     const PRINCIPLES = [
       {name:'분산투자', lessons:[['7강','한국에서도 투자 가능한 미국지수 ETF','17:24'],['8강','S&P500 ETF','15:54'],['9강','나스닥100 ETF','12:32']]},
       {name:'투자 비용', lessons:[['5강','저자가 미국 ETF를 선택한 이유','09:44'],['6강','ETF 기본 상식','22:42']]},
-      {name:'안전성', lessons:[['12강','손실률 제로 주식 투자법','09:26'],['14강','파이어를 위한 포트폴리오 전략','26:05'],['15강','절세계좌 인출 전략','14:55']]}
+      {name:'투자 위험', lessons:[['12강','손실률 제로 주식 투자법','09:26'],['14강','파이어를 위한 포트폴리오 전략','26:05'],['15강','절세계좌 인출 전략','14:55']]}
     ];
     const tiles = [...document.querySelectorAll('.pgrid .ptile')];
     const list = document.getElementById('pdList'), nameEl = document.getElementById('pdName'), panel = document.getElementById('pdetail');

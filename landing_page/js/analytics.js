@@ -1,4 +1,4 @@
-/* GA4 + Meta Pixel 행동 추적. 기본 태그/식별자는 index.html에서 관리합니다. */
+/* GA4 + Meta Pixel 행동 추적. 기본 태그/식별자는 각 HTML에서 설정합니다. */
 (function () {
   'use strict';
   if (window.LandingAnalytics) return;
@@ -46,11 +46,12 @@
     };
   }
 
-  function trackClick(event) {
+  function trackClick(event, clickSelector) {
     // 점 버튼의 .click() 등 내부 처리로 발생한 중복 클릭은 제외합니다.
     if (!event.isTrusted || !(event.target instanceof Element)) return;
     const element = event.target.closest('a[href], button, [role="button"]');
     if (!element || element.matches(':disabled, [aria-disabled="true"]')) return;
+    if (clickSelector && !element.matches(clickSelector)) return;
     const params = buttonInfo(element);
     if (element.matches('a[href]')) {
       const url = new URL(element.getAttribute('href'), location.href);
@@ -68,10 +69,11 @@
     }
   }
 
-  function init() {
+  function init(options) {
     if (initialized) return;
     initialized = true;
-    document.addEventListener('click', trackClick, true);
+    const clickSelector = options && options.clickSelector;
+    document.addEventListener('click', event => trackClick(event, clickSelector), true);
 
     // HTML 삽입 후 시작하여 빈 페이지를 100% 스크롤로 기록하지 않습니다.
     // 스크롤 가능한 거리 중 내려간 비율. 각 기준은 페이지 로드당 한 번만 기록합니다.

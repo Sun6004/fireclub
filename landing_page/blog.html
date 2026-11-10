@@ -15,6 +15,14 @@
   <!-- 스타일: 랜딩페이지 공통 스타일 + 블로그 전용 스타일 -->
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/blog.css">
+  <!-- Google Analytics 4: 랜딩페이지와 같은 속성 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SM9MT8K5DT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-SM9MT8K5DT');
+  </script>
 </head>
 <body class="blog-page">
 <div class="blog-app">
@@ -35,7 +43,7 @@
       <a class="logo" href="index.html"><img class="logo-img" src="assets/images/logo-white.png" alt="Fire.up" width="877" height="358"></a>
       <nav class="nav">
         <a href="index.html" class="nav-back">강의 소개<span class="nb-long">로 돌아가기</span></a>
-        <a class="btn btn-primary" href="https://fireclub.liveklass.com/classes/266958" target="_blank" rel="noopener">홈페이지</a>
+        <a class="btn btn-primary" data-track-id="blog_header_course" href="https://fireclub.liveklass.com/classes/266958" target="_blank" rel="noopener">홈페이지</a>
       </nav>
     </div>
   </header>
@@ -186,12 +194,12 @@
   </main>
 
   <!-- ===== 하단 CTA (랜딩페이지 마지막 CTA와 같은 띠 형태) ===== -->
-  <section class="final blog-cta">
+  <section class="final blog-cta" id="blog-enroll">
     <div class="wrap">
       <h2>투자에 확신을 더하는 <br class="m-br">첫걸음</h2>
       <p class="sub">미국 ETF의 기초부터 포트폴리오 전략까지, <br>포메뽀꼬와 함께 <br class="m-br">나만의 투자 기준을 세워보세요.</p>
       <div class="btn-row final-cta">
-        <a class="btn btn-primary" href="https://fireclub.liveklass.com/classes/266958" target="_blank" rel="noopener">미국 ETF 투자법 자세히 알아보기 <span aria-hidden="true">→</span></a>
+        <a class="btn btn-primary" data-track-id="blog_footer_course" href="https://fireclub.liveklass.com/classes/266958" target="_blank" rel="noopener">미국 ETF 투자법 자세히 알아보기 <span aria-hidden="true">→</span></a>
       </div>
     </div>
   </section>
@@ -269,6 +277,12 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
+
+  <script src="js/analytics.js"></script>
+  <script>
+    // 강의 링크만 추적하여 에디터·댓글 입력 내용을 클릭 매개변수로 수집하지 않습니다.
+    if (window.LandingAnalytics) window.LandingAnalytics.init({ clickSelector: 'a[data-track-id]' });
+  </script>
 
   <!-- 블로그 DB(Supabase): js/blog-config.js에 주소·키를 넣으면 사용됩니다. 비워 두면 브라우저 저장 방식 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
