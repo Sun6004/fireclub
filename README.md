@@ -16,7 +16,7 @@
 ---
 <img width="1372" height="392" alt="image" src="https://github.com/user-attachments/assets/36628b21-502f-4a99-b61a-9870cc051e20" />
 
-## 👥 15. Team Fire.up
+## 👥 Team Fire.up
 
 | 담당 분야 | 팀원 | 담당 분야 | 팀원 |
 |---|---|---|---|
