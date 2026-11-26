@@ -2,8 +2,6 @@
 # 🔥 Fire.up | 미국 ETF 교육 홍보 프로젝트
 
 > **99%의 클릭, 고객의 고민에서 답을 찾다.**
->
-> 고객 행동 데이터 기반의 광고 성과 분석 및 랜딩페이지 최적화 프로젝트
 
 ![Project](https://img.shields.io/badge/Project-Growth_Marketing-10685F)
 ![GA4](https://img.shields.io/badge/Google_Analytics_4-E37400?logo=googleanalytics&logoColor=white)
@@ -11,19 +9,20 @@
 ![Meta](https://img.shields.io/badge/Meta_Ads-0866FF?logo=meta&logoColor=white)
 ![Google Ads](https://img.shields.io/badge/Google_Ads-4285F4?logo=googleads&logoColor=white)
 
+[Instagram 공식 계정](https://www.instagram.com/fire.up_official/)
+[랜딩페이지](https://fireclub-etf.vercel.app/)
+[PPT]()
+
 ---
 <img width="1372" height="392" alt="image" src="https://github.com/user-attachments/assets/36628b21-502f-4a99-b61a-9870cc051e20" />
 
 ## 👥 15. Team Fire.up
 
-| Team Members |
-|---|
-| 윤하영 |
-| 이재석 |
-| 이성아 |
-| 김진영 |
-| 정지원 |
-| 이성일 |
+| 담당 분야 | 팀원 | 담당 분야 | 팀원 |
+|---|---|---|---|
+| 퍼포먼스 | 윤하영 (팀장) | 캠페인(AE) | 이성아 |
+| 그로스 | 이성일 | 콘텐츠 | 정지원 |
+| CRM | 김진영 | 브랜드 | 이재석 |
 
 ## 📌 1. 프로젝트 개요
 
