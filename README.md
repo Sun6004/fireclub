@@ -12,6 +12,18 @@
 ![Google Ads](https://img.shields.io/badge/Google_Ads-4285F4?logo=googleads&logoColor=white)
 
 ---
+<img width="1372" height="392" alt="image" src="https://github.com/user-attachments/assets/36628b21-502f-4a99-b61a-9870cc051e20" />
+
+## 👥 15. Team Fire.up
+
+| Team Members |
+|---|
+| 윤하영 |
+| 이재석 |
+| 이성아 |
+| 김진영 |
+| 정지원 |
+| 이성일 |
 
 ## 📌 1. 프로젝트 개요
 
@@ -586,18 +598,6 @@ Meta 광고 대비 약 18배 높게 나타났습니다.
 
 ---
 
-## 👥 15. Team Fire.up
-
-| Team Members |
-|---|
-| 윤하영 |
-| 이재석 |
-| 이성아 |
-| 김진영 |
-| 정지원 |
-| 이성일 |
-
----
 
 <div align="center">
 
